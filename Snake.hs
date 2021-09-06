@@ -26,10 +26,13 @@ module Snake where
     -- Constants
 
     frameDelay :: Int
-    frameDelay = 100000
+    frameDelay = 120000
 
     clearLinesAffected :: Int
     clearLinesAffected = 20
+
+    pixelWidth :: Int
+    pixelWidth = 2
 
     arenaWidth :: Int
     arenaWidth = 20
@@ -38,17 +41,19 @@ module Snake where
     arenaHeight = 20
 
     wallChar :: Char
-    wallChar = ':'
+    wallChar = '▒'
 
     snakeChar :: Char
-    snakeChar = '▅'
+    snakeChar = '█'
 
     startingSnake :: Snake
     startingSnake = Snake {
         parts = [
-            Point {x = 10, y = 8},
+            Point {x = 10, y = 10},
             Point {x = 10, y = 9},
-            Point {x = 10, y = 10}
+            Point {x = 10, y = 8},
+            Point {x = 10, y = 7},
+            Point {x = 10, y = 6}
         ],
         direction = Down
     }
@@ -60,7 +65,7 @@ module Snake where
 
     main = do
         hSetBuffering stdin NoBuffering
-        hSetBuffering stdout (BlockBuffering (Just $ (arenaWidth+3) * (arenaHeight+2) - 1))
+        hSetBuffering stdout (BlockBuffering (Just $ (arenaWidth + 3) * pixelWidth * (arenaHeight + 2)))
         hSetEcho stdout False
         startGame
 
@@ -97,27 +102,52 @@ module Snake where
     draw :: Game -> IO ()
     draw gameState = do
         drawPixel gameState 0 0
-        print gameState
+        -- print gameState
 
     drawPixel :: Game -> Int -> Int -> IO ()
     drawPixel gameStatus x y
         | x == arenaWidth + 1 && y == arenaHeight + 1 = do
-            putStr $ wallChar:"\n"
+            putStr $ replicate pixelWidth wallChar ++ "\n"
             return ()
         | x == arenaWidth + 1 = do
-            putStr $ wallChar:"\n"
+            putStr $ replicate pixelWidth wallChar ++ "\n"
             drawPixel gameStatus 0 (y + 1)
         | x == 0 || y == 0 || y == arenaHeight + 1 = do
-            putChar wallChar
+            putStr $ replicate pixelWidth wallChar
             drawPixel gameStatus (x + 1) y
         | otherwise = do
-            putChar $ if any (\Point {x = pX, y = pY} -> pX == x && pY == y) parts then snakeChar else ' '
+            putStr $ if any (\Point {x = pX, y = pY} -> pX == x && pY == y) parts then replicate pixelWidth snakeChar else replicate pixelWidth ' '
             drawPixel gameStatus (x + 1) y
-        where Game { snake = Snake { parts = parts, direction = Down }, food = food } = gameStatus
+        where Game { snake = Snake { parts = parts } } = gameStatus
 
+    nextGameState :: Game -> Char -> Game
+    nextGameState gameStatus input =
+        case (input, direction) of
+            ('w', Snake.Left)   -> goUp
+            ('w', Snake.Right)  -> goUp
+            ('d', Snake.Up)     -> goRight
+            ('d', Snake.Down)   -> goRight
+            ('s', Snake.Left)   -> goDown
+            ('s', Snake.Right)  -> goDown
+            ('a', Snake.Up)     -> goLeft
+            ('a', Snake.Down)   -> goLeft
+            (_, Snake.Up)       -> goUp
+            (_, Snake.Right)    -> goRight
+            (_, Snake.Down)     -> goDown
+            (_, Snake.Left)     -> goLeft
+            where
+                goUp = gameStatus { snake = Snake { parts = Point { x = headX, y = headY - 1 } : partsH : init partsT, direction = Snake.Up } }
+                goRight = gameStatus { snake = Snake { parts = Point { x = headX + 1, y = headY } : partsH : init partsT, direction = Snake.Right } }
+                goDown = gameStatus { snake = Snake { parts = Point { x = headX, y = headY + 1 } : partsH : init partsT, direction = Snake.Down } }
+                goLeft = gameStatus { snake = Snake { parts = Point { x = headX - 1, y = headY } : partsH : init partsT, direction = Snake.Left } }
+                Game { snake = Snake { parts = partsH:partsT, direction = direction }} = gameStatus
+                Point { x = headX, y = headY } = partsH
+
+    {-
     nextGameState :: Game -> Char -> Game
     nextGameState Game { snake = Snake { parts = (Point { x = headX, y = headY }):t, direction = Down }, food = food } input =
         Game { snake = Snake { parts = (Point {x = headX, y = (headY + 1) `mod` arenaHeight}):(Point {x = headX, y = headY}):init t, direction = Down }, food = food }
+    -}
 
     -- Probabily something to use for random
     -- import System.CPUTime (getCPUTime)
