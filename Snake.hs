@@ -143,12 +143,6 @@ module Snake where
                 Game { snake = Snake { parts = partsH:partsT, direction = direction }} = gameStatus
                 Point { x = headX, y = headY } = partsH
 
-    {-
-    nextGameState :: Game -> Char -> Game
-    nextGameState Game { snake = Snake { parts = (Point { x = headX, y = headY }):t, direction = Down }, food = food } input =
-        Game { snake = Snake { parts = (Point {x = headX, y = (headY + 1) `mod` arenaHeight}):(Point {x = headX, y = headY}):init t, direction = Down }, food = food }
-    -}
-
     -- Probabily something to use for random
     -- import System.CPUTime (getCPUTime)
     -- time <- liftIO getCPUTime
